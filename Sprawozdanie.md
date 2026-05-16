@@ -343,13 +343,192 @@ Główne zmiany, które dały największą poprawę:
 
 ---
 
+---
+
+## 3b. Uczenie maszynowe — wymagania na 4.0
+
+### 3b.1 Przygotowanie danych — wycinki i ekstrakcja cech
+
+Po preprocessingu każdy obraz jest przetwarzany piksel po pikselu. Dla każdego piksela wyznaczamy wycinek **5×5 px** wyśrodkowany na tym pikselu (padding `reflect` przy krawędziach). Z wycinka obliczamy **13 cech**:
+
+| # | Cecha | Opis |
+|---|---|---|
+| 1 | `mean` | Średnia intensywność pikseli wycinka |
+| 2 | `std` | Odchylenie standardowe |
+| 3 | `min` | Minimum |
+| 4 | `max` | Maksimum |
+| 5 | `range` | Rozstęp (max − min) |
+| 6 | `mu20` | Moment centralny μ₂₀ (wariancja w kierunku x) |
+| 7 | `mu02` | Moment centralny μ₀₂ (wariancja w kierunku y) |
+| 8 | `mu11` | Moment centralny μ₁₁ (kowariancja x·y) |
+| 9 | `mu30` | Moment centralny μ₃₀ (asymetria x) |
+| 10 | `mu03` | Moment centralny μ₀₃ (asymetria y) |
+| 11 | `H1` | Moment Hu H₁ = η₂₀ + η₀₂ (niezmiennik rotacji, ślad) |
+| 12 | `H2` | Moment Hu H₂ = (η₂₀ − η₀₂)² + 4η₁₁² (anizotropia kształtu) |
+| 13 | `vesselness` | Wartość filtra Frangiego w danym pikselu |
+
+Etykietą każdej próbki jest wartość środkowego piksela maski eksperckiej (1 = naczynie, 0 = tło).
+
+Momenty Hu obliczane są ze znormalizowanych momentów centralnych:
+η_pq = μ_pq / (μ₀₀^(1+(p+q)/2))
+
+Cecha `vesselness` pochodzi wprost z baseline'u — nie jest uczona, lecz podana klasyfikatorowi jako gotowa, silna cecha o kontekście przestrzennym.
+
+### 3b.2 Wstępne przetwarzanie zbioru uczącego — undersampling
+
+Naczynia stanowią ~7% pikseli FOV → zbiór surowy jest mocno niezrównoważony (~1:13). Zastosowano **ręczny undersampling**: dla każdego obrazu treningowego losujemy dokładnie **1 000 pikseli naczyniowych** i **1 000 pikseli tła** (z obszaru FOV). Dzięki temu zbór uczący jest idealnie zbalansowany (50/50), a klasyfikator nie jest obciążony w stronę klasy dominującej.
+
+Łączny zbiór uczący: **20 obrazów × 2 000 próbek = 40 000 próbek**, 13 cech.
+
+### 3b.3 Zastosowana metoda — Random Forest
+
+Wybrany klasyfikator: **Random Forest** z biblioteki scikit-learn.
+
+| Parametr | Wartość | Uzasadnienie |
+|---|---|---|
+| `n_estimators` | 100 | Kompromis dokładność / czas treningu |
+| `max_depth` | 20 | Ogranicza przeuczenie; pełne drzewa dawały podobny wynik |
+| `n_jobs` | -1 | Równoległy trening na wszystkich rdzeniach |
+| `random_state` | 42 | Odtwarzalność |
+
+**Dlaczego Random Forest?**
+- Nie wymaga skalowania cech (cechy są różnych rzędów wielkości)
+- Odporny na nadmiarowe cechy (np. momenty Hu mogą być słabo informatywne — RF je po prostu ignoruje)
+- Szybki trening na 40 K próbkach
+- Daje feature importances — można zweryfikować, które cechy są istotne
+
+### 3b.4 Podział train/test (hold-out)
+
+| Zbiór | Obrazy | Liczba obrazów |
+|---|---|---|
+| **Uczący** | Image_01L/R … Image_10L/R | 20 |
+| **Testowy (hold-out)** | Image_11L/R … Image_14L/R | 8 |
+
+Zbiór testowy jest identyczny z tym używanym w baseline, co umożliwia bezpośrednie porównanie metod.
+
+### 3b.5 Wyniki wstępnej oceny — zbiór testowy hold-out
+
+> **Uzupełnij po uruchomieniu notebooka (sekcja 11).**
+
+| Obraz | Accuracy | Sensitivity | Specificity | G-mean | Bal. Acc. |
+|---|---|---|---|---|---|
+| Image_11L | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
+| Image_11R | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
+| Image_12L | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
+| Image_12R | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
+| Image_13L | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
+| Image_13R | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
+| Image_14L | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
+| Image_14R | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
+| **ŚREDNIA** | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
+
+### 3b.6 Porównanie: baseline vs Random Forest
+
+| Metoda | Accuracy | Sensitivity | Specificity | G-mean | Bal. Acc. |
+|---|---|---|---|---|---|
+| Baseline (Frangi) | 0.9129 | 0.5760 | 0.9483 | 0.7381 | 0.7621 |
+| Random Forest | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
+| Delta (RF − Baseline) | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
+
+---
+
+## 4. Wizualizacja wyników
+
+Dla każdego analizowanego obrazu prezentujemy cztery widoki obok siebie:
+
+1. **Oryginał** — kolorowa fotografia dna oka
+2. **Ground truth** — maska ekspercka (czarno-biała, naczynia = białe)
+3. **Predykcja** — wynik naszego algorytmu (czarno-biała maska)
+4. **Nakładka** — fotografia z nałożoną kolorową analizą błędów:
+   - 🟢 **zielony** = TP (true positive) — poprawnie wykryte naczynie
+   - 🔴 **czerwony** = FP (false positive) — błędnie zaklasyfikowane jako naczynie (tło → naczynie)
+   - 🔵 **niebieski** = FN (false negative) — przegapione naczynie (naczynie → tło)
+
+```python
+def make_overlay(rgb, pred, gt, fov_mask):
+    overlay = rgb.copy()
+    pred_m, gt_m = pred & fov_mask, gt & fov_mask
+    overlay[pred_m & gt_m]   = [0, 255, 0]     # TP — zielony
+    overlay[pred_m & ~gt_m]  = [255, 0, 0]     # FP — czerwony
+    overlay[~pred_m & gt_m]  = [0, 0, 255]     # FN — niebieski
+    return overlay
+```
+
+Wizualizacja pozwala szybko zlokalizować typy błędów: nadmiar czerwieni → algorytm "widzi naczynia tam, gdzie ich nie ma" (np. krawędzie tarczy nerwu wzrokowego, plamki); nadmiar niebieskiego → gubi cienkie naczynia.
+
+W notebooku zaprezentowano wizualizacje dla 8 obrazów testowych (Image_11L do Image_14R) — zarówno dla metody baseline, jak i klasyfikatora Random Forest. Dla RF prezentujemy 5 kolumn: oryginał, ground truth, baseline, predykcja RF, nakładka RF.
+
+---
+
+## 5. Analiza wyników — metryki i interpretacja
+
+### 5.1 Definicje miar
+
+Dla problemu binarnego (naczynie = klasa pozytywna, tło = klasa negatywna) confusion matrix wygląda tak:
+
+| | predykcja: naczynie | predykcja: tło |
+|---|---|---|
+| **ground truth: naczynie** | TP | FN |
+| **ground truth: tło** | FP | TN |
+
+Wyznaczane miary:
+
+| Miara | Wzór | Interpretacja |
+|---|---|---|
+| Accuracy (trafność) | (TP+TN)/(TP+TN+FP+FN) | % poprawnie sklasyfikowanych pikseli |
+| Sensitivity (czułość) | TP/(TP+FN) | jaki % naczyń algorytm wykrył |
+| Specificity (swoistość) | TN/(TN+FP) | jaki % tła algorytm poprawnie odrzucił |
+| G-mean | √(sens · spec) | średnia geometryczna — wrażliwa na niezrównoważenie klas |
+| Balanced accuracy | (sens + spec) / 2 | średnia arytmetyczna — alternatywa dla g-mean |
+
+**Dlaczego dwie miary "zrównoważone"?** Klasy są mocno niezrównoważone (~93% tło, ~7% naczynia). Naiwny klasyfikator "wszystko to tło" osiągnąłby accuracy = 93%, co wygląda świetnie, a jest bezużyteczne. Miary g-mean i balanced accuracy karzą takie zachowanie, bo czułość takiego klasyfikatora wynosi 0.
+
+### 5.2 Wyniki baseline (Frangi) na zestawie testowym
+
+| Obraz | Accuracy | Sensitivity | Specificity | G-mean | Bal. Acc. |
+|---|---|---|---|---|---|
+| Image_11L | 0.9070 | 0.6123 | 0.9320 | 0.7554 | 0.7721 |
+| Image_11R | 0.9264 | 0.6935 | 0.9462 | 0.8100 | 0.8198 |
+| Image_12L | 0.9097 | 0.5238 | 0.9567 | 0.7079 | 0.7402 |
+| Image_12R | 0.9004 | 0.5255 | 0.9458 | 0.7050 | 0.7357 |
+| Image_13L | 0.9079 | 0.5664 | 0.9419 | 0.7304 | 0.7542 |
+| Image_13R | 0.9103 | 0.5434 | 0.9483 | 0.7178 | 0.7458 |
+| Image_14L | 0.9298 | 0.6242 | 0.9641 | 0.7757 | 0.7941 |
+| Image_14R | 0.9114 | 0.5187 | 0.9513 | 0.7025 | 0.7350 |
+| **ŚREDNIA** | **0.9129** | **0.5760** | **0.9483** | **0.7381** | **0.7621** |
+
+### 5.3 Wyniki Random Forest — hold-out
+
+> **Uzupełnij po uruchomieniu notebooka.**
+
+### 5.4 Interpretacja baseline
+
+- **Accuracy ~91%** — wysoki wynik, ale pamiętajmy o niezrównoważeniu klas (naiwny model "wszystko = tło" miałby już ~93%).
+- **Specificity ~95%** — algorytm bardzo dobrze odrzuca tło. Tylko ~5% pikseli tła generuje fałszywy alarm.
+- **Sensitivity ~58%** — wykrywamy ok. 58% naczyń. Główne grube naczynia są łapane prawie w całości, natomiast cienkie naczynia obwodowe są często gubione (kontrast za mały, sygnał Frangiego nie przekracza progu).
+- **G-mean ~0.74, Balanced acc ~0.76** — solidny wynik dla podejścia opartego wyłącznie na przetwarzaniu obrazu.
+
+### 5.5 Typowe błędy algorytmu
+
+**Fałszywe pozytywy (czerwony na nakładce):**
+- Tarcza nerwu wzrokowego — krawędzie błędnie identyfikowane jako naczynie
+- Krawędź FOV — cieniutka linia pozostała po erozji maski
+- Refleksy świetlne, hiperpigmentacje
+
+**Fałszywe negatywy (niebieski na nakładce):**
+- Cienkie naczynia obwodowe — sygnał Frangiego zbyt słaby
+- Naczynia w obszarach o niskim kontraście (np. plamka żółta)
+- Rozwidlenia naczyń — geometria nie jest już idealnie tubularna
+
+---
+
 ## 6. Podsumowanie
 
-Zrealizowano podstawową wersję projektu (wymagania na 3.0): pipeline przetwarzania obrazu wykorzystujący filtr Frangiego, rozmycie gaussowskie, CLAHE oraz hysteresis thresholding. Na zestawie testowym (8 obrazów) uzyskano średnie wartości: **accuracy = 0.91, sensitivity = 0.58, specificity = 0.95, g-mean = 0.74**.
+Zrealizowano wymagania na **3.0** (pipeline przetwarzania obrazu) oraz **4.0** (klasyfikator ML).
 
-Wyniki są zgodne z oczekiwaniami dla metod opartych na klasycznym przetwarzaniu obrazu. Algorytm dobrze wykrywa grubsze naczynia, ma jednak trudności z cienkimi naczyniami obwodowymi i obszarami o niskim kontraście. Główne źródła błędów to tarcza nerwu wzrokowego i obszary patologiczne.
+**Baseline (Frangi):** Na zestawie testowym (8 obrazów) uzyskano: accuracy = 0.91, sensitivity = 0.58, specificity = 0.95, g-mean = 0.74. Algorytm dobrze wykrywa grube naczynia, słabiej radzi sobie z cienkimi naczyniami obwodowymi i obszarami wokół tarczy nerwu wzrokowego.
 
-Otrzymane wyniki posłużą jako *baseline* dla dalszych etapów projektu (klasyfikator ML — wymagania na 4.0; sieć UNet — wymagania na 5.0).
+**Random Forest:** Klasyfikator trenowany na 40 000 próbkach (20 obrazów, undersampling 1:1) z 13 cechami wyznaczonymi z wycinków 5×5 px. Wyniki liczbowe — po uzupełnieniu tabeli — pozwolą ocenić, o ile klasyfikator ML poprawia (lub nie) wyniki baseline, szczególnie w zakresie czułości na cienkie naczynia.
 
 ---
 
@@ -358,4 +537,5 @@ Otrzymane wyniki posłużą jako *baseline* dla dalszych etapów projektu (klasy
 - A. F. Frangi et al., *Multiscale vessel enhancement filtering*, MICCAI 1998.
 - Baza CHASE_DB1: https://blogs.kingston.ac.uk/retinal/chasedb1/
 - Dokumentacja scikit-image: https://scikit-image.org/
+- Dokumentacja scikit-learn: https://scikit-learn.org/
 - P. Liskowski, K. Krawiec, *Segmenting Retinal Blood Vessels With Deep Neural Networks*, IEEE TMI 2016.
