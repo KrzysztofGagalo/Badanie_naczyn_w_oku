@@ -408,27 +408,25 @@ Zbiór testowy jest identyczny z tym używanym w baseline, co umożliwia bezpoś
 
 ### 3b.5 Wyniki wstępnej oceny — zbiór testowy hold-out
 
-> **Uzupełnij po uruchomieniu notebooka (sekcja 11).**
-
 | Obraz | Accuracy | Sensitivity | Specificity | G-mean | Bal. Acc. |
 |---|---|---|---|---|---|
-| Image_11L | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
-| Image_11R | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
-| Image_12L | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
-| Image_12R | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
-| Image_13L | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
-| Image_13R | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
-| Image_14L | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
-| Image_14R | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
-| **ŚREDNIA** | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
+| Image_11L | 0.8926 | 0.8653 | 0.8949 | 0.8800 | 0.8801 |
+| Image_11R | 0.9044 | 0.8132 | 0.9121 | 0.8612 | 0.8626 |
+| Image_12L | 0.8438 | 0.8460 | 0.8435 | 0.8447 | 0.8447 |
+| Image_12R | 0.8414 | 0.9048 | 0.8337 | 0.8685 | 0.8693 |
+| Image_13L | 0.9017 | 0.7625 | 0.9156 | 0.8356 | 0.8391 |
+| Image_13R | 0.8743 | 0.7991 | 0.8820 | 0.8396 | 0.8406 |
+| Image_14L | 0.8759 | 0.8722 | 0.8763 | 0.8743 | 0.8743 |
+| Image_14R | 0.8141 | 0.8496 | 0.8104 | 0.8298 | 0.8300 |
+| **ŚREDNIA** | **0.8685** | **0.8391** | **0.8711** | **0.8542** | **0.8551** |
 
 ### 3b.6 Porównanie: baseline vs Random Forest
 
 | Metoda | Accuracy | Sensitivity | Specificity | G-mean | Bal. Acc. |
 |---|---|---|---|---|---|
-| Baseline (Frangi) | 0.9129 | 0.5760 | 0.9483 | 0.7381 | 0.7621 |
-| Random Forest | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
-| Delta (RF − Baseline) | *TBD* | *TBD* | *TBD* | *TBD* | *TBD* |
+| Baseline (Frangi) | 0.9129 | 0.5755 | 0.9484 | 0.7378 | 0.7620 |
+| Random Forest | 0.8685 | 0.8391 | 0.8711 | 0.8542 | 0.8551 |
+| **Delta (RF − Baseline)** | **−0.0444** | **+0.2636** | **−0.0773** | **+0.1164** | **+0.0931** |
 
 ---
 
@@ -499,7 +497,19 @@ Wyznaczane miary:
 
 ### 5.3 Wyniki Random Forest — hold-out
 
-> **Uzupełnij po uruchomieniu notebooka.**
+| Obraz | Accuracy | Sensitivity | Specificity | G-mean | Bal. Acc. |
+|---|---|---|---|---|---|
+| Image_11L | 0.8926 | 0.8653 | 0.8949 | 0.8800 | 0.8801 |
+| Image_11R | 0.9044 | 0.8132 | 0.9121 | 0.8612 | 0.8626 |
+| Image_12L | 0.8438 | 0.8460 | 0.8435 | 0.8447 | 0.8447 |
+| Image_12R | 0.8414 | 0.9048 | 0.8337 | 0.8685 | 0.8693 |
+| Image_13L | 0.9017 | 0.7625 | 0.9156 | 0.8356 | 0.8391 |
+| Image_13R | 0.8743 | 0.7991 | 0.8820 | 0.8396 | 0.8406 |
+| Image_14L | 0.8759 | 0.8722 | 0.8763 | 0.8743 | 0.8743 |
+| Image_14R | 0.8141 | 0.8496 | 0.8104 | 0.8298 | 0.8300 |
+| **ŚREDNIA** | **0.8685** | **0.8391** | **0.8711** | **0.8542** | **0.8551** |
+
+**Najważniejsza cecha (feature importance):** `vesselness` (0.199) > `max` (0.163) > `mean` (0.118) — RF w dużej mierze polega na sygnale Frangiego, uzupełnionym przez lokalne statystyki intensywności.
 
 ### 5.4 Interpretacja baseline
 
@@ -528,7 +538,9 @@ Zrealizowano wymagania na **3.0** (pipeline przetwarzania obrazu) oraz **4.0** (
 
 **Baseline (Frangi):** Na zestawie testowym (8 obrazów) uzyskano: accuracy = 0.91, sensitivity = 0.58, specificity = 0.95, g-mean = 0.74. Algorytm dobrze wykrywa grube naczynia, słabiej radzi sobie z cienkimi naczyniami obwodowymi i obszarami wokół tarczy nerwu wzrokowego.
 
-**Random Forest:** Klasyfikator trenowany na 40 000 próbkach (20 obrazów, undersampling 1:1) z 13 cechami wyznaczonymi z wycinków 5×5 px. Wyniki liczbowe — po uzupełnieniu tabeli — pozwolą ocenić, o ile klasyfikator ML poprawia (lub nie) wyniki baseline, szczególnie w zakresie czułości na cienkie naczynia.
+**Random Forest:** Klasyfikator trenowany na 40 000 próbkach (20 obrazów, undersampling 1:1) z 13 cechami wyznaczonymi z wycinków 5×5 px uzyskał: accuracy = 0.87, sensitivity = **0.84**, specificity = 0.87, g-mean = **0.85**.
+
+Kluczowy wniosek z porównania obu metod: RF radykalnie poprawia **czułość** (+26 pp) kosztem **swoistości** (−8 pp). G-mean wzrósł o +11 pp, co potwierdza, że RF znacznie lepiej radzi sobie z wykrywaniem naczyń (zwłaszcza cienkich), jednocześnie generując więcej fałszywych pozytywów niż baseline Frangiego. Dominująca cecha wg feature importances to `vesselness` (0.20) — RF efektywnie "kalibruje" wynik filtra Frangiego przez kontekst lokalnych statystyk.
 
 ---
 
